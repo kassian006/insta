@@ -19,6 +19,9 @@ class UserProfile(AbstractUser):
     def __str__(self):
         return f'{self.first_name} - {self.last_name}'
 
+    def get_post_quantity(self):
+        return self.user_posts.all().count()
+
 class Follow(models.Model):
     follower = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='follower')
     following = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='following')
@@ -40,7 +43,7 @@ class Hashtag(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='user_posts')
     image = models.ImageField(upload_to='post_image/', null=True, blank=True)
     video = models.FileField(upload_to='post_video/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -52,6 +55,9 @@ class Post(models.Model):
         if ratings.exists():
             return ratings.count()
         return 0
+
+    # def get_count_post(self):
+    #     quantity = self.
 
     def __str__(self):
         return f'{self.user}-{self.hashtag}'

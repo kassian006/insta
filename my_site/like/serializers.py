@@ -1,9 +1,37 @@
 from django.template.defaulttags import comment
+from django_rest_passwordreset.models import ResetPasswordToken
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+
+
+class VerifyResetCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()  # Email пользователя
+    reset_code = serializers.IntegerField()  # 4-значный код
+    new_password = serializers.CharField(write_only=True)  # Новый пароль
+
+    def validate(self, data):
+        email = data.get('email')
+        reset_code = data.get('reset_code')
+
+        # Проверяем, существует ли указанный код для email
+        try:
+            token = ResetPasswordToken.objects.get(user__email=email, key=reset_code)
+        except ResetPasswordToken.DoesNotExist:
+            raise serializers.ValidationError("Неверный код сброса или email.")
+
+        data['user'] = token.user
+        return data
+
+    def save(self):
+        user = self.validated_data['user']
+        new_password = self.validated_data['new_password']
+
+        # Устанавливаем новый пароль
+        user.set_password(new_password)
+        user.save()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,9 +79,14 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    post_quantity = serializers.SerializerMethodField()
+
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+    def get_post_quantity(self, obj):
+            return obj.get_post_quantity()
 
 
 class UserProfileSimpleSerializer(serializers.ModelSerializer):
@@ -79,6 +112,9 @@ class PostListSerializer(serializers.ModelSerializer):
         model = Post
         fields = ['id','image', 'video']
 
+    def get_count_people(self, obj):
+            return obj.get_count_people()
+
 
 class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -97,9 +133,11 @@ class PostLikeListSerializer(serializers.ModelSerializer):
         model = PostLike
         fields = ['id','post', 'like']
 
+    def get_count_people(self, obj):
+            return obj.get_count_people()
+
 
 class PostLikeDetailSerializer(serializers.ModelSerializer):
-
 
     class Meta:
         model = PostLike
@@ -110,6 +148,9 @@ class CommentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['id','user', 'text']
+
+    def get_count_people(self, obj):
+            return obj.get_count_people()
 
 
 class CommentDetailSerializer(serializers.ModelSerializer):
@@ -123,6 +164,9 @@ class CommentLikeListSerializer(serializers.ModelSerializer):
         model = CommentLike
         fields = ['id','like']
 
+    def get_count_people(self, obj):
+            return obj.get_count_people()
+
 
 class CommentLikeDetailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -134,6 +178,9 @@ class StoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
         fields = ['id', 'user', 'image', 'video']
+
+    def get_count_people(self, obj):
+            return obj.get_count_people()
 
 
 class StoryDetailSerializer(serializers.ModelSerializer):

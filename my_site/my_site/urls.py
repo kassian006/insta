@@ -25,6 +25,7 @@ from drf_yasg import openapi
 from rest_framework import permissions
 from django.conf import settings
 
+
 schema_view = get_schema_view(
     openapi.Info(
         title="INSTAGRAM",
@@ -32,6 +33,7 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=(permissions.AllowAny,),
 )
+
 
 urlpatterns = i18n_patterns(
     path('admin/', admin.site.urls),
